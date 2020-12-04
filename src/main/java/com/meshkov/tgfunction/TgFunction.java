@@ -4,7 +4,6 @@ import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
 import com.pengrad.telegrambot.BotUtils;
-import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import lombok.extern.java.Log;
 
@@ -25,18 +24,17 @@ public class TgFunction implements HttpFunction {
 		try (final var reader = request.getReader()) {
 			final var body = reader.lines().collect(Collectors.joining());
 			log.info("Body : " + body);
-		}
+			final var update = BotUtils.parseUpdate(body);
+			log.info("Update : " + update);
 
-		final var update = BotUtils.parseUpdate(request.getReader());
-		log.info("Update : " + update);
+			final var chatId = update.message().chat().id();
+			final var message = new SendMessage(chatId, "It works!").toWebhookResponse();
 
-		final var chatId = update.message().chat().id();
-		final var message = new SendMessage(chatId, "It works!").toWebhookResponse();
-
-		response.setStatusCode(200);
-		response.setContentType("application/json");
-		try (final var writer = response.getWriter()) {
-			writer.write(message);
+			response.setStatusCode(200);
+			response.setContentType("application/json");
+			try (final var writer = response.getWriter()) {
+				writer.write(message);
+			}
 		}
 	}
 
