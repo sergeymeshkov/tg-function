@@ -3,6 +3,9 @@ package com.meshkov.tgfunction;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
+import com.pengrad.telegrambot.BotUtils;
+import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.request.SendMessage;
 import lombok.extern.java.Log;
 
 import java.util.stream.Collectors;
@@ -18,22 +21,20 @@ public class TgFunction implements HttpFunction {
 		log.info("Query param : " + request.getQueryParameters());
 		log.info("Headers : " + request.getHeaders());
 		log.info("Content type : " + request.getContentType());
+
 		try (final var reader = request.getReader()) {
 			final var body = reader.lines().collect(Collectors.joining());
 			log.info("Body : " + body);
 		}
 
-		final var statusCode = 200;
-		final var contentType = "application/json";
-		final var message = "" +
-				"{\n" +
-				"\"method\" : \"sendMessage\",\n" +
-				"\"chat_id\" : \"?\",\n" +
-				"\"text\" : \"Ok, I got you!\"\n" +
-				"}";
+		final var update = BotUtils.parseUpdate(request.getReader());
+		log.info("Update : " + update);
 
-		response.setStatusCode(statusCode);
-		response.setContentType(contentType);
+		final var chatId = update.message().chat().id();
+		final var message = new SendMessage(chatId, "It works!").toWebhookResponse();
+
+		response.setStatusCode(200);
+		response.setContentType("application/json");
 		try (final var writer = response.getWriter()) {
 			writer.write(message);
 		}
